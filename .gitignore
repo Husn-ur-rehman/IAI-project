@@ -9,7 +9,7 @@ data/processed/
 *.egg-info/
 dist/
 
-# Editor / tool settings
+# Editor / tool 
 .vscode/
 .idea/
 .claude/
@@ -19,5 +19,7 @@ Thumbs.db
 desktop.ini
 .DS_Store
 
-# LaTeX source of the report (kept locally / on Overleaf; only the PDF is committed)
 report/
+
+# Generated evaluation output (figures, tables, metrics); recreate with python -m cheatdetect.evaluate
+reports/
