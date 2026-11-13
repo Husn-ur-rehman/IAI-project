@@ -3,7 +3,10 @@ __pycache__/
 *.pyc
 .pytest_cache/
 data/raw/
-data/processed/
+data/processed/*
+# ...except the two fact tables the deployed app needs (anonymised, ~1.5 MB)
+!data/processed/players.parquet
+!data/processed/kills.parquet
 *.part
 .ipynb_checkpoints/
 *.egg-info/
