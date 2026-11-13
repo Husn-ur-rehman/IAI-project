@@ -1,0 +1,16 @@
+\begin{table}
+\caption{Expert system operating points against single-signal baselines (evaluation set).}
+\label{tab:operating-points}
+\begin{tabular}{lrrrrr}
+\toprule
+Operating point & Flagged & Precision & Recall & F1 & FPR \\
+\midrule
+monitor or stricter & 615 & 0.863 & 0.406 & 0.552 & 0.020 \\
+hide or stricter & 365 & 0.877 & 0.244 & 0.382 & 0.011 \\
+ban review only & 205 & 0.893 & 0.140 & 0.242 & 0.005 \\
+baseline: headshot rate > p95 & 561 & 0.797 & 0.341 & 0.478 & 0.027 \\
+baseline: any metric > p99 & 714 & 0.793 & 0.432 & 0.560 & 0.035 \\
+baseline: any metric > p95 & 1653 & 0.529 & 0.668 & 0.590 & 0.184 \\
+\bottomrule
+\end{tabular}
+\end{table}

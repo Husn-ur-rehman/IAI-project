@@ -23,6 +23,8 @@ def test_rows_carry_kb_answers(kb):
     assert v.loc["x_aim", "explanation"][0].startswith("Action: review_for_ban")
     assert v.loc["x_norm", "explanation"][0].startswith("cheating: CF")  # why-not for cleared
     assert v.loc["x_pro", "cf_legit"] > 0.5
+    assert {"a1", "c1"} <= set(v.loc["x_aim", "fired_rules"])
+    assert "l1" in v.loc["x_pro", "fired_rules"] and "c4" in v.loc["x_pro", "fired_rules"]
 
 
 def test_strictness_dial(kb):
