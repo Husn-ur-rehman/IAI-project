@@ -9,25 +9,26 @@ An expert system that flags suspected cheaters on a CS2 leaderboard. It demonstr
 
 ```
 data/raw/cs2cd/      CS2CD JSON event files (not committed)
-data/processed/      facts, verdicts (generated)
+data/processed/      players.parquet, kills.parquet (committed); facts, verdicts (generated)
 kb/                  Prolog knowledge base
 src/cheatdetect/     Python package (facts, calibration, bridge, evaluation)
 app/                 Streamlit decision-support UI
-scripts/             one-off scripts (dataset download)
 tests/               pytest
-reports/             figures and metrics for the report
 ```
 
 ## Setup
 
 Requires Python 3.11+ and 64-bit SWI-Prolog on PATH.
 
+The console runs from the committed `data/processed/` files. To rerun the full pipeline, download the
+JSON event files of [CS2CD](https://huggingface.co/datasets/CS2CD/CS2CD.Counter-Strike_2_Cheat_Detection)
+(CC BY 4.0) into `data/raw/cs2cd/`.
+
 ```
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 pip install -e .
-python scripts/download_cs2cd.py     # ~1.8 GB, JSON files only
 pytest
 ```
 
@@ -37,19 +38,9 @@ pytest
 python -m cheatdetect.facts       # JSON -> data/processed/players.parquet, kills.parquet
 python -m cheatdetect.calibrate   # calibration half of clean matches -> kb/thresholds.pl
 python -m cheatdetect.bridge      # KB verdict per player -> data/processed/verdicts.parquet
-python -m cheatdetect.evaluate    # held-out evaluation -> reports/figures, reports/tables
+python -m cheatdetect.evaluate    # held-out evaluation -> reports/ (figures, tables; not committed)
 streamlit run app/streamlit_app.py   # moderator console (decision support)
 ```
-
-## Report
-
-`report/main.tex` and `report/references.bib` are the LaTeX source; `report/screenshots/` holds the console screenshots. Build the Overleaf package with:
-
-```
-python scripts/build_report.py    # checks the LaTeX, then writes dist/cs2-expert-system-report.zip
-```
-
-On Overleaf: New Project > Upload Project > choose the zip, then compile with pdfLaTeX. The evaluation figures are copied from `reports/figures`, so rerun `python -m cheatdetect.evaluate` first if the results changed.
 
 ## Moderator console
 
