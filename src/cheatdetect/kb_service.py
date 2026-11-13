@@ -1,28 +1,63 @@
 """One long-lived owner of the Prolog engine for the UI.
 
 SWI-Prolog is not safe to query from several threads at once, and Streamlit runs every
-rerun on a different thread. Every KB call therefore goes through one single-thread executor.
+rerun on a different thread. Every KB call therefore goes through one dedicated worker thread.
 Everything the UI shows about a player comes from these calls, or from the verdict table
 they produced.
 """
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
+import atexit
+import queue
+import threading
+from concurrent.futures import Future
 
 import pandas as pd
 
 from cheatdetect import bridge, config, prolog_io
 from cheatdetect.prolog_io import atom, text
 
+_STOP = object()
+
 
 class KBService:
     def __init__(self):
-        self._pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="prolog")
+        self._jobs: queue.Queue = queue.Queue()
+        # A daemon thread of our own, not a ThreadPoolExecutor: concurrent.futures stops
+        # accepting work before atexit hooks run, and close() must still reach this thread then.
+        self._thread = threading.Thread(target=self._loop, name="prolog", daemon=True)
+        self._thread.start()
         self._verdicts: pd.DataFrame | None = None
         self._run(self._boot)
+        atexit.register(self.close)        # runs before pyswip's exit hook (last-in, first-out)
+
+    def _loop(self):
+        while True:
+            job = self._jobs.get()
+            if job is _STOP:
+                # pyswip attaches a Prolog engine to every thread that queries and never releases
+                # it, so SWI-Prolog would print "Failed to stop Prolog threads" at exit.
+                from pyswip.core import _lib
+                _lib.PL_thread_destroy_engine()
+                return
+            fn, args, kwargs, fut = job
+            try:
+                fut.set_result(fn(*args, **kwargs))
+            except BaseException as exc:  # hand the error to the caller
+                fut.set_exception(exc)
 
     def _run(self, fn, *args, **kwargs):
-        return self._pool.submit(fn, *args, **kwargs).result()
+        if not self._thread.is_alive():
+            raise RuntimeError("the knowledge-base service is closed")
+        fut: Future = Future()
+        self._jobs.put((fn, args, kwargs, fut))
+        return fut.result()
+
+    def close(self):
+        """Release the worker thread's Prolog engine and stop the thread."""
+        if self._thread.is_alive():
+            self._jobs.put(_STOP)
+            self._thread.join(timeout=10)
 
     # ---------- runs on the Prolog thread ----------
     def _boot(self):
