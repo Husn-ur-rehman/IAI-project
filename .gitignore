@@ -19,14 +19,5 @@ Thumbs.db
 desktop.ini
 .DS_Store
 
-# LaTeX build output (if the report is ever compiled locally)
-report/*.aux
-report/*.log
-report/*.out
-report/*.toc
-report/*.bbl
-report/*.blg
-report/*.synctex.gz
-report/*.fdb_latexmk
-report/*.fls
-report/*.pdf
+# LaTeX source of the report (kept locally / on Overleaf; only the PDF is committed)
+report/
