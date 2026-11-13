@@ -1,9 +1,9 @@
-"""End-to-end smoke test of the Streamlit console (needs the processed data)."""
+"""End-to-end smoke test of the Streamlit console (needs data/processed/players.parquet)."""
 import pytest
 
 from cheatdetect import config, moderation
 
-pytestmark = pytest.mark.skipif(not config.VERDICTS_FILE.exists(), reason="run the pipeline first")
+pytestmark = pytest.mark.skipif(not config.PLAYERS_FILE.exists(), reason="run cheatdetect.facts first")
 
 
 @pytest.fixture(scope="module")
