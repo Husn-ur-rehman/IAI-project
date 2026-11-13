@@ -161,7 +161,7 @@ def render_player(pid: str, key: str):
         for col, (code, label) in zip((c1, c2, c3), [("ban", "Confirm ban"), ("keep_hidden", "Keep hidden, monitor"),
                                                       ("restore", "Restore to leaderboard")]):
             if col.button(label, key=f"{code}-{key}", type="primary" if code == "ban" else "secondary",
-                          use_container_width=True):
+                          width="stretch"):
                 moderation.record(pid, code, a["action"], a["cheating_cf"])
                 st.toast(f"{moderation.DECISIONS[code]} for {pid}.")
                 st.rerun()
@@ -204,7 +204,7 @@ def view_check(_v: pd.DataFrame):
     ex = st.columns(len(EXAMPLES) + 1)
     ex[0].markdown('<p class="muted" style="margin-top:.45rem">Fill with an example:</p>', unsafe_allow_html=True)
     for col, name in zip(ex[1:], EXAMPLES):
-        col.button(name, on_click=load_example, args=(name,), use_container_width=True, key=f"ex-{name}")
+        col.button(name, on_click=load_example, args=(name,), width="stretch", key=f"ex-{name}")
 
     # Pull every value into its limits before the fields are drawn, so no field can hold an
     # impossible value. Limits follow the fields before them (e.g. Deaths max = Rounds played).
@@ -276,7 +276,7 @@ def render_consultation(r: dict):
         if rows:
             st.dataframe(pd.DataFrame(rows, columns=["Metric", "This player", "Normal up to (p95)", "Rare above (p99)",
                                                      "Result"]),
-                         hide_index=True, use_container_width=True,
+                         hide_index=True, width="stretch",
                          column_config={c: st.column_config.NumberColumn(format="%.3f")
                                         for c in ["This player", "Normal up to (p95)", "Rare above (p99)"]})
         else:
@@ -351,7 +351,7 @@ def view_queue(v: pd.DataFrame):
             "pid": "Player", "cheating_cf": "Cheating CF", "diagnosis": "Diagnosis", "kills": "Kills",
             "deaths": "Deaths"})
         shown["Diagnosis"] = shown.Diagnosis.map(DIAG)
-        event = st.dataframe(shown, hide_index=True, use_container_width=True, height=520, on_select="rerun",
+        event = st.dataframe(shown, hide_index=True, width="stretch", height=520, on_select="rerun",
                              selection_mode="single-row", key="queue",
                              column_config={"Cheating CF": st.column_config.ProgressColumn(
                                  "Cheating CF", min_value=0.0, max_value=1.0, format="%.2f", width="medium"),
@@ -389,7 +389,7 @@ def view_leaderboard(v: pd.DataFrame):
     b.loc[~hidden, "Public rank"] = [str(i) for i in range(1, int((~hidden).sum()) + 1)]
     st.dataframe(b[["Public rank", "pid", "adr", "kills", "deaths", "rounds_played", "Status", "map"]].rename(columns={
         "pid": "Player", "adr": "Damage per round", "kills": "Kills", "deaths": "Deaths", "rounds_played": "Rounds",
-        "map": "Map"}), hide_index=True, use_container_width=True, height=560,
+        "map": "Map"}), hide_index=True, width="stretch", height=560,
         column_config={"Damage per round": st.column_config.NumberColumn(format="%.0f")})
     if show_hidden:
         st.caption(f"{int(hidden.sum())} of these {len(b)} players are hidden from the public ranking. "
@@ -468,7 +468,7 @@ def view_dial(v: pd.DataFrame):
     rule = alt.Chart(pd.DataFrame({"t": [review]})).mark_rule(color="#24070E", strokeDash=[3, 3]).encode(x="t:Q")
     chart = (base.mark_line(strokeWidth=2) + rule).properties(height=280).configure_axisX(grid=False, tickCount=8) \
         .configure_axisY(gridColor="#DFCFA6").configure_view(strokeWidth=0)
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width="stretch")
 
 
 def view_knowledge(_v: pd.DataFrame):
@@ -482,14 +482,14 @@ def view_knowledge(_v: pd.DataFrame):
         r = kb().rules()
         r["concludes"] = r.concludes.map(lambda c: DIAG.get(c, c.capitalize()))
         st.dataframe(r.rename(columns={"rule": "Rule", "concludes": "Concludes", "if_all_of": "If all of",
-                                       "rule_cf": "Rule CF"}), hide_index=True, use_container_width=True, height=560)
+                                       "rule_cf": "Rule CF"}), hide_index=True, width="stretch", height=560)
     with c2:
         st.markdown("##### What counts as abnormal")
         t = kb().metric_thresholds()
         t["metric"] = t.metric.map(lambda m: METRIC.get(m, m))
         t = t.drop(columns="meaning")
         st.dataframe(t.rename(columns={"metric": "Metric", "p95": "Above p95 (CF 0.4)",
-                                       "p99": "Above p99 (CF 0.8)"}), hide_index=True, use_container_width=True,
+                                       "p99": "Above p99 (CF 0.8)"}), hide_index=True, width="stretch",
                      column_config={"Above p95 (CF 0.4)": st.column_config.NumberColumn(format="%.3f"),
                                     "Above p99 (CF 0.8)": st.column_config.NumberColumn(format="%.3f")})
         st.markdown("##### When the system acts")
@@ -497,7 +497,7 @@ def view_knowledge(_v: pd.DataFrame):
         st.dataframe(pd.DataFrame([(ACTION_LABEL[k], v, "Human decides" if k == "review_for_ban" else "Automatic")
                                    for k, v in sorted(a.items(), key=lambda x: x[1])],
                                   columns=["Action", "At cheating CF", "Who decides"]), hide_index=True,
-                     use_container_width=True)
+                     width="stretch")
 
 
 # ---------- page -----------------------------------------------------------------------

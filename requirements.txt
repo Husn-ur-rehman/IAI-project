@@ -1,6 +1,6 @@
 pandas>=2.2
 pyarrow>=17
 pyswip>=0.3.2
-streamlit>=1.40
+streamlit>=1.50
 matplotlib>=3.9
 pytest>=8
