@@ -41,6 +41,16 @@ python -m cheatdetect.evaluate    # held-out evaluation -> reports/figures, repo
 streamlit run app/streamlit_app.py   # moderator console (decision support)
 ```
 
+## Report
+
+`report/main.tex` and `report/references.bib` are the LaTeX source; `report/screenshots/` holds the console screenshots. Build the Overleaf package with:
+
+```
+python scripts/build_report.py    # checks the LaTeX, then writes dist/cs2-expert-system-report.zip
+```
+
+On Overleaf: New Project > Upload Project > choose the zip, then compile with pdfLaTeX. The evaluation figures are copied from `reports/figures`, so rerun `python -m cheatdetect.evaluate` first if the results changed.
+
 ## Moderator console
 
 | Tab | What it does |
