@@ -47,6 +47,17 @@ def engine():
     return prolog
 
 
+def text(x) -> str:
+    """pyswip returns Prolog strings as bytes; decode them."""
+    return x.decode("utf-8") if isinstance(x, bytes) else str(x)
+
+
+def lines(goal: str, var: str = "L") -> list[str]:
+    """Run a goal that binds a list of strings (e.g. why/2) and return Python strings."""
+    res = list(engine().query(goal, maxresult=1))
+    return [text(l) for l in res[0][var]] if res else []
+
+
 def reload_kb():
     engine().consult(config.KB_MAIN.as_posix())
 
