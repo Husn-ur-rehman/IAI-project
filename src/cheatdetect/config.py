@@ -8,7 +8,8 @@ CHEATER_DIR = RAW_DIR / "with_cheater_present"
 CLEAN_DIR = RAW_DIR / "no_cheater_present"
 
 PROCESSED_DIR = ROOT / "data" / "processed"
-FEATURES_FILE = PROCESSED_DIR / "player_match_features.parquet"
+PLAYERS_FILE = PROCESSED_DIR / "players.parquet"   # per player-match counts + label
+KILLS_FILE = PROCESSED_DIR / "kills.parquet"       # per kill events -> Prolog kill/9 facts
 
 KB_DIR = ROOT / "kb"
 KB_MAIN = KB_DIR / "main.pl"
