@@ -26,3 +26,6 @@ report/
 
 
 reports/
+
+# Helper scripts (dataset download, report packaging); kept locally only
+scripts/
