@@ -5,6 +5,8 @@ An expert system that flags suspected cheaters on a CS2 leaderboard. It demonstr
 - **Python:** data pipeline, calibration, evaluation, Streamlit UI.
 - **SWI-Prolog (via pyswip):** knowledge base, certainty factors, why/how explanations.
 
+**Live app:** https://cs2-integrity-console.streamlit.app/
+
 ## Layout
 
 ```
