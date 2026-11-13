@@ -33,6 +33,49 @@ KILL_TYPES = {
 }
 
 
+MAX_SHOTS = 20_000   # no rule limits shots; this only keeps the field finite
+
+# Form order. Each field's limits depend only on fields earlier in this list.
+FIELD_ORDER = ["rounds_played", "kills", "deaths", "assists", "shots_fired", "gun_hits", "head_hits", "damage",
+               "headshot_kills", "wallbang_kills", "smoke_kills", "blind_kills", "airborne_kills"]
+
+
+def limits(field: str, v: dict) -> tuple[int, int]:
+    """(min, max) a field may take, given the values of the fields before it in FIELD_ORDER.
+    Any input built within these limits passes PlayerInput.problems()."""
+    r = v.get("rounds_played", 1)
+    rules = {   # lambdas: only the asked field is computed, so later fields may still be missing
+        "rounds_played": lambda: (1, MAX_ROUNDS),
+        "kills": lambda: (0, 5 * r),                                  # 5 enemies per round
+        "deaths": lambda: (0, r),                                     # one life per round
+        "assists": lambda: (0, 5 * r - v["kills"]),                   # a kill or an assist per enemy death
+        "shots_fired": lambda: (0, MAX_SHOTS),
+        "gun_hits": lambda: (0, min(v["shots_fired"], 500 * r)),      # and room for damage >= hits
+        "head_hits": lambda: (0, v["gun_hits"]),
+        "damage": lambda: (max(v["gun_hits"], v["kills"]), 500 * r),  # >= 1 HP per hit/kill, <= 5 x 100 HP per round
+        "headshot_kills": lambda: (0, min(v["kills"], v["head_hits"])),
+        "wallbang_kills": lambda: (0, v["kills"]),
+        "smoke_kills": lambda: (0, v["kills"]),
+        "blind_kills": lambda: (0, v["kills"]),
+        "airborne_kills": lambda: (0, v["kills"]),
+    }
+    return rules[field]()
+
+
+def clamp(values: dict) -> tuple[dict, dict, list[tuple[str, int, int]]]:
+    """Pull every field into its limits, in form order.
+    Returns (clamped values, {field: (min, max)}, [(field, old, new) for each value that moved])."""
+    out, bounds, moved = {}, {}, []
+    for f in FIELD_ORDER:
+        lo, hi = limits(f, out)
+        old = int(values.get(f, lo))
+        new = min(max(old, lo), hi)
+        out[f], bounds[f] = new, (lo, hi)
+        if new != old:
+            moved.append((f, old, new))
+    return out, bounds, moved
+
+
 @dataclass
 class PlayerInput:
     rounds_played: int = 20

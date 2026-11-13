@@ -98,6 +98,33 @@ def test_damage_at_least_hits():
     assert only_problem(damage=59).startswith("Total damage must be at least the number of hits")
 
 
+def test_anything_the_form_allows_is_valid():
+    """Fill fields in form order with random values inside their limits: never a problem."""
+    import random
+
+    from cheatdetect.consultation import FIELD_ORDER, limits
+
+    rng = random.Random(7)
+    for _ in range(3000):
+        v = {}
+        for f in FIELD_ORDER:
+            lo, hi = limits(f, v)
+            assert lo <= hi, (f, v)
+            v[f] = rng.choice([lo, hi, rng.randint(lo, hi)])
+        assert PlayerInput(**v).problems() == [], v
+
+
+def test_clamp_pulls_the_reported_input_into_range():
+    from cheatdetect.consultation import clamp
+
+    reported = dict(rounds_played=1, kills=5, deaths=2, assists=14, shots_fired=70, gun_hits=40, head_hits=3,
+                    damage=400, headshot_kills=3, wallbang_kills=1, smoke_kills=0, blind_kills=0, airborne_kills=0)
+    values, bounds, moved = clamp(reported)
+    assert PlayerInput(**values).problems() == []
+    assert ("deaths", 2, 1) in moved and ("assists", 14, 0) in moved
+    assert bounds["deaths"] == (0, 1) and bounds["assists"] == (0, 0)
+
+
 def test_app_examples_pass_the_checks():
     import ast
 

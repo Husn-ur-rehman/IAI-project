@@ -37,6 +37,17 @@ def test_check_a_player_shows_all_four_capabilities(app):
     assert "Very likely cheating" in headings
 
 
+def test_lowering_rounds_pulls_other_fields_down(app):
+    app.button(key="ex-Aimbot-like").click().run()
+    app.number_input(key="ci_rounds_played").set_value(1).run()
+    assert not app.exception
+    assert app.number_input(key="ci_kills").value == 5          # max 5 x 1 round
+    assert app.number_input(key="ci_deaths").value == 1         # max 1 life
+    assert app.number_input(key="ci_assists").value == 0        # 5 - 5 kills
+    assert app.number_input(key="ci_deaths").max == 1           # the + button stops at 1
+    assert any("were lowered or raised" in i.value for i in app.info)
+
+
 def test_moderator_decision_is_recorded(tmp_path, monkeypatch):
     monkeypatch.setattr(moderation, "DECISIONS_FILE", tmp_path / "d.csv")
     moderation.record("c1_Player_10", "ban", "review_for_ban", 0.9)
