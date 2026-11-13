@@ -38,7 +38,18 @@ python -m cheatdetect.facts       # JSON -> data/processed/players.parquet, kill
 python -m cheatdetect.calibrate   # calibration half of clean matches -> kb/thresholds.pl
 python -m cheatdetect.bridge      # KB verdict per player -> data/processed/verdicts.parquet
 python -m cheatdetect.evaluate    # held-out evaluation -> reports/figures, reports/tables
+streamlit run app/streamlit_app.py   # moderator console (decision support)
 ```
+
+## Moderator console
+
+| Tab | What it does |
+|---|---|
+| Review queue | Players the KB sent for a ban decision, most certain first, with the live Prolog explanation. The moderator confirms, keeps hidden or restores. Decisions go to `data/processed/moderator_decisions.csv`. |
+| Leaderboard | Public ranking by damage per round. Players the KB hid lose their rank, and a moderator decision overrides the KB. |
+| Player lookup | Any player's verdict, why it was reached, and why-not for any diagnosis |
+| Strictness dial | Rewrites the `action_threshold/2` facts in Prolog and re-decides every player; shows precision and recall on held-out players |
+| Knowledge base | The rules, thresholds and action levels, read live from Prolog |
 
 ## Data
 
