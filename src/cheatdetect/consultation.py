@@ -21,6 +21,18 @@ from cheatdetect import bridge, prolog_io
 from cheatdetect.prolog_io import atom, text
 
 
+MAX_ROUNDS = 36   # 24 regulation rounds + overtime; the dataset's longest match is 32
+
+# Field -> label as the form shows it, so error messages use the same words.
+KILL_TYPES = {
+    "headshot_kills": "Headshot kills",
+    "wallbang_kills": "Kills through walls",
+    "smoke_kills": "Kills through smoke",
+    "blind_kills": "Kills while flashed",
+    "airborne_kills": "Kills while airborne",
+}
+
+
 @dataclass
 class PlayerInput:
     rounds_played: int = 20
@@ -45,6 +57,8 @@ class PlayerInput:
         if self.rounds_played < 1:
             p.append("Rounds played must be at least 1.")
             return p
+        if self.rounds_played > MAX_ROUNDS:
+            p.append(f"Rounds played cannot exceed {MAX_ROUNDS}: a match is at most 24 rounds plus overtime.")
         r = self.rounds_played
         # Limits of the game: 5 enemies per round, one life per round, 100 HP per enemy.
         if self.kills + self.assists > 5 * r:
@@ -56,6 +70,8 @@ class PlayerInput:
             p.append(f"Total damage cannot exceed {500 * r}: 5 enemies with 100 HP each per round.")
         if self.kills > self.damage:
             p.append("Total damage must be at least the number of kills: every kill takes damage.")
+        if self.gun_hits > self.damage:
+            p.append("Total damage must be at least the number of hits: every hit removes at least 1 HP.")
         # Parts cannot be bigger than their whole.
         if self.gun_hits > self.shots_fired:
             p.append("Hits cannot be more than shots fired.")
@@ -63,9 +79,11 @@ class PlayerInput:
             p.append("Headshot hits cannot be more than hits.")
         if self.headshot_kills > self.head_hits:
             p.append("Headshot kills cannot be more than headshot hits: each headshot kill needs a hit to the head.")
-        for name in ("headshot_kills", "wallbang_kills", "smoke_kills", "blind_kills", "airborne_kills"):
+        # Each kill type is checked on its own, never as a sum: one kill can be a headshot,
+        # through a wall and while flashed at the same time.
+        for name, label in KILL_TYPES.items():
             if getattr(self, name) > self.kills:
-                p.append(f"{name.replace('_', ' ').capitalize()} cannot be more than kills.")
+                p.append(f"{label} cannot be more than kills.")
         return p
 
     def facts(self, pid: str) -> list[str]:
