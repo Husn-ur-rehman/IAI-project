@@ -21,5 +21,5 @@ desktop.ini
 
 report/
 
-# Generated evaluation output (figures, tables, metrics); recreate with python -m cheatdetect.evaluate
+
 reports/
