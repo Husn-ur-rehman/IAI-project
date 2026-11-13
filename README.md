@@ -9,9 +9,9 @@ An expert system that flags suspected cheaters on a CS2 leaderboard. It demonstr
 
 ```
 data/raw/cs2cd/      CS2CD JSON event files (not committed)
-data/processed/      aggregated per-player-match features
+data/processed/      facts, verdicts (generated)
 kb/                  Prolog knowledge base
-src/cheatdetect/     Python package (features, bridge, evaluation)
+src/cheatdetect/     Python package (facts, calibration, bridge, evaluation)
 app/                 Streamlit decision-support UI
 scripts/             one-off scripts (dataset download)
 tests/               pytest
@@ -26,8 +26,18 @@ Requires Python 3.11+ and 64-bit SWI-Prolog on PATH.
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
+pip install -e .
 python scripts/download_cs2cd.py     # ~1.8 GB, JSON files only
 pytest
+```
+
+## Pipeline
+
+```
+python -m cheatdetect.facts       # JSON -> data/processed/players.parquet, kills.parquet
+python -m cheatdetect.calibrate   # calibration half of clean matches -> kb/thresholds.pl
+python -m cheatdetect.bridge      # KB verdict per player -> data/processed/verdicts.parquet
+python -m cheatdetect.evaluate    # held-out evaluation -> reports/figures, reports/tables
 ```
 
 ## Data

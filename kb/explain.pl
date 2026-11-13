@@ -53,6 +53,10 @@ symptom_labels(P, Labels) :-
                  ;   format(string(L), "~w", [S]) ) ),
             Labels).
 
+% fired_rules(P, Ids): every backward rule whose premises all exceeded the CF threshold
+fired_rules(P, Ids) :-
+    findall(Id, ( br(Id, _, Prems, RCF), fire(P, Prems, RCF, _, _) ), Ids).
+
 % explanation(P, Action, Lines): "why" for flagged players, "why not" for cleared ones
 explanation(P, clear, Lines) :- !, why_not(P, cheating, Lines).
 explanation(P, _, Lines) :- why(P, Lines).

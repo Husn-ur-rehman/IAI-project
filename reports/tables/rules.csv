@@ -1,0 +1,16 @@
+rule,meaning,fired,share_cheaters
+a1,aimbot: headshot rate + accuracy,189,0.8571428571428571
+a2,aimbot: headshot rate + HS-kill rate,306,0.8562091503267973
+a3,aimbot: accuracy + high impact,210,0.8047619047619048
+a4,aimbot: headshot rate + high impact,354,0.867231638418079
+w1,wallhack: wallbang rate,641,0.8705148205928237
+w2,wallhack: wallbang rate + high impact,362,0.8867403314917127
+w3,wallhack: smoke kills + high impact,53,0.8113207547169812
+r1,rage: airborne kills + headshot rate,101,0.8514851485148515
+r2,rage: blind kills + headshot rate,23,0.782608695652174
+r3,rage: wallbang + headshot + accuracy,126,0.9126984126984127
+l1,legit outlier: high impact + normal aim,163,0.2147239263803681
+c1,cheating <- aimbot,415,0.8457831325301205
+c2,cheating <- wallhack,433,0.9006928406466512
+c3,cheating <- rage cheat,203,0.8916256157635468
+c4,cheating <- legit outlier (against),163,0.2147239263803681

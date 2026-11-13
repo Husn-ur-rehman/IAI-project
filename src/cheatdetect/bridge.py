@@ -35,7 +35,7 @@ def assess_one(pid: str) -> dict:
     p = atom(pid)
     cf_goals = ", ".join(f"prove({p}, {g}, {v.upper()}, _)" for v, g in DIAGNOSES.items())
     goal = (f"assess({p}, A, M, CF, D, DCF), {cf_goals}, "
-            f"symptom_labels({p}, S), explanation({p}, A, L)")
+            f"symptom_labels({p}, S), fired_rules({p}, R), explanation({p}, A, L)")
     r = list(e.query(goal, maxresult=1))[0]
     return dict(
         pid=pid,
@@ -46,6 +46,7 @@ def assess_one(pid: str) -> dict:
         diagnosis_cf=float(r["DCF"]),
         **{v: float(r[v.upper()]) for v in DIAGNOSES},
         symptoms=[text(s) for s in r["S"]],
+        fired_rules=[text(x) for x in r["R"]],
         explanation=[text(l) for l in r["L"]],
     )
 

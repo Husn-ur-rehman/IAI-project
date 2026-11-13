@@ -1,0 +1,7 @@
+level,negatives_from,negatives,flagged,fpr
+monitor or stricter,cheater matches,1846,15,0.008125677139761646
+monitor or stricter,clean matches,2385,69,0.028930817610062894
+hide or stricter,cheater matches,1846,3,0.0016251354279523294
+hide or stricter,clean matches,2385,42,0.01761006289308176
+ban review only,cheater matches,1846,1,0.0005417118093174431
+ban review only,clean matches,2385,21,0.00880503144654088
