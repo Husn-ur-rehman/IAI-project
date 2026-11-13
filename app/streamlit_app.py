@@ -16,6 +16,7 @@ import streamlit as st
 
 from cheatdetect import config, moderation
 from cheatdetect.calibrate import is_calibration_match
+from cheatdetect.consultation import PlayerInput
 from cheatdetect.evaluate import scores
 from cheatdetect.kb_service import KBService
 
@@ -71,7 +72,7 @@ h1, h2, h3, h4, .stTabs button p { font-family: "Lexend", "Segoe UI", sans-serif
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: .3rem 0 .6rem; }
 .chip { font-size: .85rem; padding: 2px 8px; border-radius: 6px; background: var(--sunk); }
 .chip em { font-style: normal; color: var(--brand); font-weight: 600; margin-left: 4px; }
-.trace { background: var(--sunk); border-radius: 8px; padding: 12px; font-family: "JetBrains Mono", Consolas, monospace; font-size: .76rem; line-height: 1.6; white-space: pre; overflow-x: auto; }
+.trace { background: var(--sunk); border-radius: 8px; padding: 12px; font-family: "JetBrains Mono", Consolas, monospace; font-size: .76rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
 .muted { color: var(--ink-2); font-size: .9rem; }
 .head-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .head-row h3 { margin: 0; padding: 0; }
@@ -162,6 +163,155 @@ def render_player(pid: str, key: str):
 
 
 # ---------- views ----------------------------------------------------------------
+
+FIELDS = [  # (field, label, help) in the order the form shows them
+    ("rounds_played", "Rounds played", None), ("kills", "Kills", None), ("deaths", "Deaths", None),
+    ("assists", "Assists", None), ("shots_fired", "Shots fired", "Gun shots only, no grenades or knife"),
+    ("gun_hits", "Hits", "Shots that hit an enemy"), ("head_hits", "Headshot hits", "Hits that landed on the head"),
+    ("damage", "Total damage", "Health removed from enemies over the match"),
+    ("headshot_kills", "Headshot kills", None), ("wallbang_kills", "Kills through walls", None),
+    ("smoke_kills", "Kills through smoke", None), ("blind_kills", "Kills while flashed", None),
+    ("airborne_kills", "Kills while airborne", None),
+]
+EXAMPLES = {
+    "Typical player": PlayerInput(),
+    "Aimbot-like": PlayerInput(rounds_played=20, kills=38, deaths=6, assists=3, shots_fired=280, gun_hits=170,
+                               head_hits=140, damage=4100, headshot_kills=33, wallbang_kills=2),
+    "Wallhack-like": PlayerInput(rounds_played=21, kills=31, deaths=9, assists=4, shots_fired=360, gun_hits=95,
+                                 head_hits=36, damage=3100, headshot_kills=15, wallbang_kills=14, smoke_kills=3),
+    "Strong but legit": PlayerInput(rounds_played=22, kills=36, deaths=12, assists=5, shots_fired=420, gun_hits=105,
+                                    head_hits=30, damage=3500, headshot_kills=16, wallbang_kills=1),
+    "Too few rounds": PlayerInput(rounds_played=3, kills=2, deaths=3, assists=0, shots_fired=20, gun_hits=5,
+                                  head_hits=1, damage=120, headshot_kills=1, wallbang_kills=0),
+}
+
+
+def load_example(name: str):
+    for f, _, _ in FIELDS:
+        st.session_state[f"ci_{f}"] = getattr(EXAMPLES[name], f)
+
+
+def view_check(_v: pd.DataFrame):
+    st.markdown("#### Check a player")
+    st.markdown('<p class="muted">Enter one player\'s numbers from a match. The knowledge base reasons over them '
+                'exactly as it does for the real players, then shows each step of its reasoning.</p>',
+                unsafe_allow_html=True)
+    for f, _, _ in FIELDS:
+        st.session_state.setdefault(f"ci_{f}", getattr(PlayerInput(), f))
+    ex = st.columns(len(EXAMPLES) + 1)
+    ex[0].markdown('<p class="muted" style="margin-top:.45rem">Fill with an example:</p>', unsafe_allow_html=True)
+    for col, name in zip(ex[1:], EXAMPLES):
+        col.button(name, on_click=load_example, args=(name,), use_container_width=True, key=f"ex-{name}")
+
+    with st.form("check"):
+        st.markdown("**Match totals**")
+        cols = st.columns(4)
+        for i, (f, label, help_) in enumerate(FIELDS[:8]):
+            cols[i % 4].number_input(label, min_value=0, step=1, key=f"ci_{f}", help=help_)
+        st.markdown("**Of the kills, how many were...**")
+        cols = st.columns(5)
+        for i, (f, label, help_) in enumerate(FIELDS[8:]):
+            cols[i].number_input(label, min_value=0, step=1, key=f"ci_{f}", help=help_)
+        submitted = st.form_submit_button("Check player", type="primary")
+
+    if submitted:
+        inp = PlayerInput(**{f: int(st.session_state[f"ci_{f}"]) for f, _, _ in FIELDS})
+        problems = inp.problems()
+        if problems:
+            for p in problems:
+                st.error(p)
+            return
+        with st.spinner("The knowledge base is reasoning..."):
+            st.session_state["check_result"] = kb().consult(inp)
+    r = st.session_state.get("check_result")
+    if r:
+        render_consultation(r)
+
+
+def render_consultation(r: dict):
+    mode_text = "a moderator decides" if r["decision_mode"] == "human" else "the system acts on its own"
+    diag_cf = "" if r["diagnosis"] == "none" else " ({:.2f})".format(r["diagnosis_cf"])
+    st.markdown(
+        f'<div class="head-row" style="margin-top:.6rem"><h3>{r["verdict"]}</h3>{pill(r["action"])}</div>'
+        f'<p class="muted">Cheating certainty factor {r["cheating_cf"]:.2f}. '
+        f'Diagnosis: {DIAG[r["diagnosis"]]}{diag_cf}. '
+        f'Next step: {ACTION_LABEL[r["action"]].lower()}, {mode_text}.</p>', unsafe_allow_html=True)
+
+    left, right = st.columns(2, gap="large")
+    with left:
+        st.markdown("##### 1. Inference")
+        st.markdown('<p class="muted">Forward chaining turns the numbers into symptoms by comparing each metric with '
+                    'what is normal for clean players.</p>', unsafe_allow_html=True)
+        rows = []
+        for m, val in sorted(r["metrics"].items()):
+            t = r["thresholds"].get(m, {})
+            level = "above p99" if val > t.get("p99", 9e9) else "above p95" if val > t.get("p95", 9e9) else "normal"
+            rows.append((METRIC.get(m, m), val, t.get("p95"), t.get("p99"), level))
+        if rows:
+            st.dataframe(pd.DataFrame(rows, columns=["Metric", "This player", "Normal up to (p95)", "Rare above (p99)",
+                                                     "Result"]),
+                         hide_index=True, use_container_width=True,
+                         column_config={c: st.column_config.NumberColumn(format="%.3f")
+                                        for c in ["This player", "Normal up to (p95)", "Rare above (p99)"]})
+        else:
+            st.info("No metric has enough data to be measured.")
+        st.markdown(f'<div class="trace">{html.escape(chr(10).join(r["inference"]) or "No forward rule fired.")}</div>',
+                    unsafe_allow_html=True)
+        with st.expander("Backward chaining: how the cheating CF was proved"):
+            st.markdown(f'<div class="trace">{html.escape(chr(10).join(r["proof"]))}</div>', unsafe_allow_html=True)
+
+    with right:
+        st.markdown("##### 2. Diagnosis")
+        cfs = sorted(r["cfs"].items(), key=lambda x: -x[1])
+        st.markdown("".join(
+            f'<div class="cfrow {"top" if i == 0 and v > 0 else ""}"><span>{DIAG[k]}</span>'
+            f'<span class="track"><i style="width:{max(v, 0) * 100:.0f}%"></i></span><span class="v">{v:.2f}</span></div>'
+            for i, (k, v) in enumerate(cfs)), unsafe_allow_html=True)
+        if r["cfs"]["legit_outlier"] > 0.2:
+            st.markdown('<p class="muted">The legit-strong-player rule fired. It counts as evidence <em>against</em> '
+                        'cheating (rule c4, CF -0.7).</p>', unsafe_allow_html=True)
+
+        st.markdown("##### 3. Decision making")
+        t = r["action_thresholds"]
+        ladder = ", ".join(f"{ACTION_LABEL[a].lower()} from {v:.2f}" for a, v in sorted(t.items(), key=lambda x: x[1]))
+        if r["action"] == "no_action":
+            why = "Too little shooting data to measure aim, so the system takes no action."
+        elif r["action"] == "clear":
+            why = f"Cheating CF {r['cheating_cf']:.2f} is below the monitor threshold ({t['monitor']:.2f})."
+        else:
+            why = f"Cheating CF {r['cheating_cf']:.2f} reaches the {ACTION_LABEL[r['action']].lower()} threshold ({t[r['action']]:.2f})."
+        who = ("A ban cannot be undone, so the system does not decide. It sends the case to a moderator."
+               if r["decision_mode"] == "human" else
+               "This action is cheap to undo, so the system takes it automatically.")
+        st.markdown(f"{pill(r['action'])} &nbsp;{why}<br><span class='muted'>{who}<br>Action levels: {ladder}.</span>",
+                    unsafe_allow_html=True)
+
+        st.markdown("##### 4. Decision support")
+        evidence = [s for s in r["symptoms"] if s.startswith("abnormal(")]
+        if r["decision_mode"] == "human":
+            st.markdown("**Recommendation for the moderator:** review this player for a ban. The strongest evidence:")
+        elif r["action"] in ("monitor", "hide_from_leaderboard"):
+            st.markdown("**For a moderator who checks later:** the evidence behind this action:")
+        else:
+            st.markdown("**For a moderator who disagrees:** the closest any cheat rule came to firing:")
+        if evidence and r["action"] not in ("clear", "no_action"):
+            st.markdown("<div class='chips'>" + "".join(symptom_chip(s) for s in evidence) + "</div>",
+                        unsafe_allow_html=True)
+        goal = r["diagnosis"] if r["diagnosis"] != "none" else max(
+            ["aimbot", "wallhack", "rage_cheat"], key=lambda g: r["cfs"][g])
+        if r["action"] == "no_action":
+            st.markdown('<p class="muted">Ask for a longer match: at least 20 hits, 50 shots or 8 kills are needed to '
+                        'judge aim.</p>', unsafe_allow_html=True)
+        else:
+            label = "Why-not for " if r["action"] == "clear" else "Rules behind "
+            with st.expander(f"{label}{DIAG[goal].lower()}", expanded=r["action"] == "clear"):
+                st.markdown(f'<div class="trace">{html.escape(chr(10).join(r["why_not"][goal]))}</div>',
+                            unsafe_allow_html=True)
+        if r["action"] not in ("clear", "no_action"):
+            st.markdown(f'<p class="muted">The verdict would drop one level if the cheating CF fell below '
+                        f'{t[r["action"]]:.2f}. Move the thresholds on the Strictness dial tab to see the effect.</p>',
+                        unsafe_allow_html=True)
+
 
 def view_queue(v: pd.DataFrame):
     q = v[(v.action == "review_for_ban") & (v.moderator == "")].sort_values("cheating_cf", ascending=False)
@@ -340,8 +490,9 @@ def main():
         f'<span><b>{counts.get("clear", 0):,}</b>cleared</span>'
         f'<span><b>{counts.get("no_action", 0):,}</b>too little data to judge</span></div>', unsafe_allow_html=True)
 
-    tabs = st.tabs(["Review queue", "Leaderboard", "Player lookup", "Strictness dial", "Knowledge base"])
-    for tab, view in zip(tabs, [view_queue, view_leaderboard, view_lookup, view_dial, view_knowledge]):
+    tabs = st.tabs(["Check a player", "Review queue", "Leaderboard", "Player lookup", "Strictness dial",
+                    "Knowledge base"])
+    for tab, view in zip(tabs, [view_check, view_queue, view_leaderboard, view_lookup, view_dial, view_knowledge]):
         with tab:
             view(v)
 

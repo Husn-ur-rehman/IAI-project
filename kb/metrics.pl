@@ -25,6 +25,13 @@ read_facts(S) :-
 
 player(P) :- stat(P, rounds_played, _).
 
+% forget_player(P): remove a player's base facts and everything derived from them
+% (used after a consultation, so a checked player never stays in working memory).
+forget_player(P) :-
+    retractall(stat(P, _, _)),
+    retractall(kill(P, _, _, _, _, _, _, _, _)),
+    retractall(derived(P, _, _, _, _)).
+
 % ---------- Base counts -----------------------------------------------
 
 count(P, Key, N) :- stat(P, Key, N), !.
