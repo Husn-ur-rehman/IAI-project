@@ -16,7 +16,7 @@ import streamlit as st
 
 from cheatdetect import config, moderation
 from cheatdetect.calibrate import is_calibration_match
-from cheatdetect.consultation import PlayerInput
+from cheatdetect.consultation import PlayerInput, clamp
 from cheatdetect.evaluate import scores
 from cheatdetect.kb_service import KBService
 
@@ -193,39 +193,60 @@ def load_example(name: str):
 
 def view_check(_v: pd.DataFrame):
     st.markdown("#### Check a player")
-    st.markdown('<p class="muted">Enter one player\'s numbers from a match. The knowledge base reasons over them '
-                'exactly as it does for the real players, then shows each step of its reasoning.</p>',
-                unsafe_allow_html=True)
-    for f, _, _ in FIELDS:
-        st.session_state.setdefault(f"ci_{f}", getattr(PlayerInput(), f))
+    st.markdown('<p class="muted">Enter one player’s numbers from a match. The knowledge base reasons over them '
+                'exactly as it does for the real players, then shows each step of its reasoning. Each field only '
+                'accepts values a real match allows, given the fields before it.</p>', unsafe_allow_html=True)
     ex = st.columns(len(EXAMPLES) + 1)
     ex[0].markdown('<p class="muted" style="margin-top:.45rem">Fill with an example:</p>', unsafe_allow_html=True)
     for col, name in zip(ex[1:], EXAMPLES):
         col.button(name, on_click=load_example, args=(name,), use_container_width=True, key=f"ex-{name}")
 
-    with st.form("check"):
+    # Pull every value into its limits before the fields are drawn, so no field can hold an
+    # impossible value. Limits follow the fields before them (e.g. Deaths max = Rounds played).
+    current = {f: st.session_state.get(f"ci_{f}", getattr(PlayerInput(), f)) for f, _, _ in FIELDS}
+    values, bounds, moved = clamp(current)
+    for f, val in values.items():
+        st.session_state[f"ci_{f}"] = val
+    if moved and st.session_state.get("ci_seen"):
+        label = {f: lab for f, lab, _ in FIELDS}
+        st.info("To stay within a real match, these fields were lowered or raised: " + "; ".join(
+            f"{label[f]} {old} to {new}" for f, old, new in moved) + ".")
+    st.session_state["ci_seen"] = True
+
+    def field(col, f, label, help_):
+        lo, hi = bounds[f]
+        note = f"Allowed: {lo} to {hi}."
+        col.number_input(label, min_value=lo, max_value=hi, step=1, key=f"ci_{f}",
+                         help=f"{help_} {note}" if help_ else note)
+
+    with st.container(border=True):
         st.markdown("**Match totals**")
         cols = st.columns(4)
         for i, (f, label, help_) in enumerate(FIELDS[:8]):
-            cols[i % 4].number_input(label, min_value=0, step=1, key=f"ci_{f}", help=help_)
+            field(cols[i % 4], f, label, help_)
         st.markdown("**Of the kills, how many were...**")
         cols = st.columns(5)
         for i, (f, label, help_) in enumerate(FIELDS[8:]):
-            cols[i].number_input(label, min_value=0, step=1, key=f"ci_{f}", help=help_)
-        submitted = st.form_submit_button("Check player", type="primary")
+            field(cols[i], f, label, help_)
+        submitted = st.button("Check player", type="primary", key="check-player")
 
+    inp = PlayerInput(**{f: int(st.session_state[f"ci_{f}"]) for f, _, _ in FIELDS})
     if submitted:
-        inp = PlayerInput(**{f: int(st.session_state[f"ci_{f}"]) for f, _, _ in FIELDS})
-        problems = inp.problems()
+        problems = inp.problems()          # a second, server-side check; the limits above should make it empty
         if problems:
             for p in problems:
                 st.error(p)
             return
         with st.spinner("The knowledge base is reasoning..."):
-            st.session_state["check_result"] = kb().consult(inp)
-    r = st.session_state.get("check_result")
-    if r:
-        render_consultation(r)
+            st.session_state["check_result"] = (inp, kb().consult(inp))
+    saved = st.session_state.get("check_result")
+    if saved:
+        checked, r = saved
+        if checked != inp:
+            st.markdown('<p class="muted">The numbers changed since the last check. Press <b>Check player</b> '
+                        'to see the verdict for the new numbers.</p>', unsafe_allow_html=True)
+        else:
+            render_consultation(r)
 
 
 def render_consultation(r: dict):
