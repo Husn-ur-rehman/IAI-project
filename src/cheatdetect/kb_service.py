@@ -73,6 +73,11 @@ class KBService:
     def why_not(self, pid: str, goal: str) -> list[str]:
         return self._run(self._why_not, pid, goal)
 
+    def consult(self, inp) -> dict:
+        """Assess a player described by the user (temporary facts, removed afterwards)."""
+        from cheatdetect.consultation import run_consult
+        return self._run(run_consult, inp)
+
     def apply_thresholds(self, review: float, hide: float, monitor: float):
         self._run(self._apply, review, hide, monitor)
 

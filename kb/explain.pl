@@ -45,6 +45,13 @@ reason_text(cheating_cf_below_monitor, CF, S) :-
     action_threshold(monitor, T),
     format(string(S), "cheating CF ~2f < monitor threshold ~2f", [CF, T]).
 
+% inference_lines(P, Lines): what forward chaining derived, one line per fired rule
+inference_lines(P, Lines) :-
+    findall(L, ( derived(P, S, CF, Id, Ev),
+                 evidence_text(Ev, ET),
+                 format(string(L), "rule ~w fired: ~w  =>  ~w (CF ~2f)", [Id, ET, S, CF]) ),
+            Lines).
+
 % symptom_labels(P, Labels): short labels of the derived symptoms, e.g. "abnormal(accuracy)@p99"
 symptom_labels(P, Labels) :-
     findall(L, ( derived(P, S, _, _, Ev),

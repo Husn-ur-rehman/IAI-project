@@ -17,14 +17,24 @@ def app():
 
 def test_app_renders_every_view(app):
     assert not app.exception
-    assert [t.label for t in app.tabs] == ["Review queue", "Leaderboard", "Player lookup", "Strictness dial",
-                                           "Knowledge base"]
+    assert [t.label for t in app.tabs] == ["Check a player", "Review queue", "Leaderboard", "Player lookup",
+                                           "Strictness dial", "Knowledge base"]
     assert any("CS2 Integrity Console" in m.value for m in app.markdown)
 
 
 def test_queue_shows_kb_explanation(app):
     text = "\n".join(m.value for m in app.markdown)
     assert "Action: review_for_ban (human)" in text      # live why/2 output from Prolog
+
+
+def test_check_a_player_shows_all_four_capabilities(app):
+    app.button(key="ex-Aimbot-like").click().run()
+    app.button[[b.label for b in app.button].index("Check player")].click().run()
+    assert not app.exception
+    headings = "\n".join(m.value for m in app.markdown)
+    for part in ("1. Inference", "2. Diagnosis", "3. Decision making", "4. Decision support"):
+        assert part in headings
+    assert "Very likely cheating" in headings
 
 
 def test_moderator_decision_is_recorded(tmp_path, monkeypatch):

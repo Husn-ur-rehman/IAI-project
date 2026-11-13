@@ -45,6 +45,7 @@ streamlit run app/streamlit_app.py   # moderator console (decision support)
 
 | Tab | What it does |
 |---|---|
+| Check a player | Enter one player's match numbers. The KB reasons over them as temporary facts and shows inference (metrics → symptoms, proof tree), diagnosis (CF per cheat type), decision making (action, automatic or human) and decision support (recommendation, evidence, why-not). The facts are removed afterwards. |
 | Review queue | Players the KB sent for a ban decision, most certain first, with the live Prolog explanation. The moderator confirms, keeps hidden or restores. Decisions go to `data/processed/moderator_decisions.csv`. |
 | Leaderboard | Public ranking by damage per round. Players the KB hid lose their rank, and a moderator decision overrides the KB. |
 | Player lookup | Any player's verdict, why it was reached, and why-not for any diagnosis |
