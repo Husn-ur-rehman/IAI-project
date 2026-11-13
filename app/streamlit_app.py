@@ -8,6 +8,11 @@ KBService). Python here only lays it out and records the moderator's decisions.
 from __future__ import annotations
 
 import html
+import sys
+from pathlib import Path
+
+# Make the cheatdetect package importable without `pip install -e .` (e.g. on Streamlit Cloud).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import altair as alt
 import numpy as np
