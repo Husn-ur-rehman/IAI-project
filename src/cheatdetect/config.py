@@ -11,6 +11,7 @@ PROCESSED_DIR = ROOT / "data" / "processed"
 PLAYERS_FILE = PROCESSED_DIR / "players.parquet"   # per player-match counts + label
 KILLS_FILE = PROCESSED_DIR / "kills.parquet"       # per kill events -> Prolog kill/9 facts
 FACTS_FILE = PROCESSED_DIR / "facts.pl"            # stat/3 + kill/9 facts (no labels)
+VERDICTS_FILE = PROCESSED_DIR / "verdicts.parquet" # KB answer per player-match (+ label, for eval)
 
 KB_DIR = ROOT / "kb"
 KB_MAIN = KB_DIR / "main.pl"

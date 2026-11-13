@@ -45,6 +45,18 @@ reason_text(cheating_cf_below_monitor, CF, S) :-
     action_threshold(monitor, T),
     format(string(S), "cheating CF ~2f < monitor threshold ~2f", [CF, T]).
 
+% symptom_labels(P, Labels): short labels of the derived symptoms, e.g. "abnormal(accuracy)@p99"
+symptom_labels(P, Labels) :-
+    findall(L, ( derived(P, S, _, _, Ev),
+                 (   Ev = exceeds(_, _, Level, _)
+                 ->  format(string(L), "~w@~w", [S, Level])
+                 ;   format(string(L), "~w", [S]) ) ),
+            Labels).
+
+% explanation(P, Action, Lines): "why" for flagged players, "why not" for cleared ones
+explanation(P, clear, Lines) :- !, why_not(P, cheating, Lines).
+explanation(P, _, Lines) :- why(P, Lines).
+
 % ---------- proof tree -> indented lines ---------------------------------
 
 proof_lines(concluded(G, CF, []), D) --> !,
