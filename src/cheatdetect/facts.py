@@ -80,12 +80,30 @@ def extract_match(path: Path) -> tuple[list[dict], list[dict]]:
         if valid(e["user_steamid"]) and is_gun(e["weapon"]):
             row(e["user_steamid"])["shots_fired"] += 1
 
-    for e in after(d.get("player_hurt", [])):
-        att, vic = e.get("attacker_steamid"), e.get("user_steamid")
+    # On a lethal hit, dmg_health includes overkill (seen up to 4999), so we track each
+    # victim's health from spawn and credit only the health actually removed.
+    # Every hurt event (self, world, bots) is replayed so the tracked health stays correct.
+    timeline = sorted(
+        [(e["tick"], 0, e) for e in after(d.get("player_spawn", []))]
+        + [(e["tick"], 1, e) for e in after(d.get("player_hurt", []))],
+        key=lambda t: (t[0], t[1]),
+    )
+    health: dict[str, int] = {}
+    for _, kind, e in timeline:
+        vic = e.get("user_steamid")
+        if kind == 0:
+            health[vic] = 100
+            continue
+        before = health.get(vic, 100)
+        after_hit = max(int(e.get("health", 0)), 0)
+        health[vic] = after_hit
+        dealt = min(int(e.get("dmg_health", 0)), max(before - after_hit, 0))
+
+        att = e.get("attacker_steamid")
         if not valid(att) or att == vic:
             continue
         r = row(att)
-        r["damage"] += e.get("dmg_health", 0)
+        r["damage"] += dealt
         if is_gun(e["weapon"]):
             r["gun_hits"] += 1
             r["head_hits"] += e.get("hitgroup") == "head"
