@@ -44,12 +44,25 @@ class PlayerInput:
             p.append("Numbers cannot be negative.")
         if self.rounds_played < 1:
             p.append("Rounds played must be at least 1.")
+            return p
+        r = self.rounds_played
+        # Limits of the game: 5 enemies per round, one life per round, 100 HP per enemy.
+        if self.kills + self.assists > 5 * r:
+            p.append(f"Kills plus assists cannot exceed {5 * r}: there are only 5 enemies per round, "
+                     f"and each enemy death gives you a kill or an assist, not both.")
+        if self.deaths > r:
+            p.append(f"Deaths cannot exceed rounds played ({r}): a player dies at most once per round.")
+        if self.damage > 500 * r:
+            p.append(f"Total damage cannot exceed {500 * r}: 5 enemies with 100 HP each per round.")
+        if self.kills > self.damage:
+            p.append("Total damage must be at least the number of kills: every kill takes damage.")
+        # Parts cannot be bigger than their whole.
         if self.gun_hits > self.shots_fired:
             p.append("Hits cannot be more than shots fired.")
         if self.head_hits > self.gun_hits:
             p.append("Headshot hits cannot be more than hits.")
-        if self.damage > 500 * self.rounds_played:
-            p.append("Damage cannot exceed 500 per round (5 enemies with 100 HP).")
+        if self.headshot_kills > self.head_hits:
+            p.append("Headshot kills cannot be more than headshot hits: each headshot kill needs a hit to the head.")
         for name in ("headshot_kills", "wallbang_kills", "smoke_kills", "blind_kills", "airborne_kills"):
             if getattr(self, name) > self.kills:
                 p.append(f"{name.replace('_', ' ').capitalize()} cannot be more than kills.")

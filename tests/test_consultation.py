@@ -40,6 +40,30 @@ def test_impossible_input_is_rejected(kb):
     assert leftover(kb) == 0
 
 
+def test_game_limits_are_enforced():
+    # the input from the user's screenshot: 1 round, 30 kills, 4 deaths, 20 headshot kills, 19 headshot hits
+    p = PlayerInput(rounds_played=1, kills=30, deaths=4, assists=5, shots_fired=394, gun_hits=68,
+                    head_hits=19, damage=300, headshot_kills=20, wallbang_kills=1, smoke_kills=1).problems()
+    assert any(s.startswith("Kills plus assists cannot exceed 5") for s in p)
+    assert any(s.startswith("Deaths cannot exceed rounds played") for s in p)
+    assert any(s.startswith("Headshot kills cannot be more than headshot hits") for s in p)
+    assert len(p) == 3
+
+
+def test_app_examples_pass_the_checks():
+    import ast
+
+    from cheatdetect import config
+
+    src = (config.ROOT / "app" / "streamlit_app.py").read_text(encoding="utf-8")
+    block = src[src.index("EXAMPLES = {"):src.index("def load_example")]
+    ns = {"PlayerInput": PlayerInput}
+    exec(compile(ast.parse(block), "examples", "exec"), ns)
+    assert PlayerInput().problems() == []
+    for name, example in ns["EXAMPLES"].items():
+        assert example.problems() == [], name
+
+
 def test_facts_cover_every_kill_flag():
     facts = PlayerInput(kills=3, headshot_kills=2, wallbang_kills=1).facts("p")
     kills = [f for f in facts if f.startswith("kill(")]
