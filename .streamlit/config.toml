@@ -1,0 +1,13 @@
+# Approved palette: crimson #7F011F + parchment #F5EBD0
+[theme]
+base = "light"
+primaryColor = "#7F011F"
+backgroundColor = "#F5EBD0"
+secondaryBackgroundColor = "#FBF6E8"
+textColor = "#24070E"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
