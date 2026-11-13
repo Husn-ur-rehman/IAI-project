@@ -56,8 +56,6 @@ h1, h2, h3, h4, .stTabs button p { font-family: "Lexend", "Segoe UI", sans-serif
         justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: .6rem; }
 .band h1 { font-family: "Lexend", sans-serif; font-size: 1.35rem; font-weight: 600; margin: 0; padding: 0; color: var(--on-brand); }
 .band p { margin: 0; opacity: .85; font-size: .9rem; }
-.strip { display: flex; flex-wrap: wrap; gap: 6px 24px; color: var(--ink-2); margin: .2rem 0 .4rem; }
-.strip b { font-family: "Lexend", sans-serif; font-weight: 600; font-size: 1.3rem; color: var(--ink); margin-right: 4px; font-variant-numeric: tabular-nums; }
 .pill { display: inline-flex; align-items: center; gap: 5px; padding: 1px 9px 1px 7px; border-radius: 999px; font-size: .8rem; font-weight: 600; white-space: nowrap; border: 1px solid transparent; }
 .pill svg { width: 11px; height: 11px; }
 .s-none { border: 1px dashed var(--ink-2); color: var(--ink-2); }
@@ -505,16 +503,9 @@ def view_knowledge(_v: pd.DataFrame):
 def main():
     st.markdown(CSS, unsafe_allow_html=True)
     v = table()
-    counts = v.action.value_counts()
-    waiting = int(((v.action == "review_for_ban") & (v.moderator == "")).sum())
     st.markdown(
         f'<div class="band"><h1>CS2 Integrity Console</h1><p>Verdicts from the Prolog knowledge base, '
-        f'{len(v):,} player-matches</p></div>'
-        f'<div class="strip"><span><b>{waiting}</b>waiting for a moderator</span>'
-        f'<span><b>{counts.get("hide_from_leaderboard", 0)}</b>hidden automatically</span>'
-        f'<span><b>{counts.get("monitor", 0)}</b>being monitored</span>'
-        f'<span><b>{counts.get("clear", 0):,}</b>cleared</span>'
-        f'<span><b>{counts.get("no_action", 0):,}</b>too little data to judge</span></div>', unsafe_allow_html=True)
+        f'{len(v):,} player-matches</p></div>', unsafe_allow_html=True)
 
     tabs = st.tabs(["Check a player", "Review queue", "Leaderboard", "Player lookup", "Strictness dial",
                     "Knowledge base"])
